@@ -1,0 +1,62 @@
+name: Update 3GPP Specifications
+
+on:
+  schedule:
+    # Run every 2 weeks on Monday at 2 AM UTC
+    - cron: '0 2 */14 * 1'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  update-specs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install LibreOffice
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice --no-install-recommends
+          soffice --version
+      
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run scraper
+        run: |
+          python scraper.py
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Check if there are any changes
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git add .
+          git commit -m "chore: Update 3GPP specifications $(date +'%Y-%m-%d')"
+          git push
+      
+      - name: No updates found
+        if: steps.check_changes.outputs.changes == 'false'
+        run: |
+          echo "No specification updates found."
