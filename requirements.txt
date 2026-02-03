@@ -1,4 +1,4 @@
-python-docx>=0.8.11
-lxml>=4.9.0
-bs4>=4.10.0
-requests>=2.25.0
+python-docx
+lxml
+bs4
+requests
